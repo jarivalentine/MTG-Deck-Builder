@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Howest.MagicCards.DAL.Repositories;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -16,9 +14,11 @@ namespace Howest.MagicCards.WebAPI.Controllers
         }
 
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult GetCards()
         {
-            return Ok("Hello World");
+            return (_cardRepo.GetCards() is IEnumerable<string> cards)
+                ? Ok(cards)
+                : NotFound("No cards found");
         }
     }
 }

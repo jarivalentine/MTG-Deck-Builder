@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Howest.MagicCards.DAL.Repositories
 {
-    internal interface ICardRepository
+    public interface ICardRepository
     {
+        IEnumerable<string> GetCards();
     }
 }
