@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\Howest.Magic.DAL\Howest.MagicCards.DAL.csproj" />
   </ItemGroup>
 
 </Project>
