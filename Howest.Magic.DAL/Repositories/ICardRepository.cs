@@ -8,6 +8,7 @@ namespace Howest.MagicCards.DAL.Repositories
 {
     public interface ICardRepository
     {
-        IEnumerable<string> GetCards();
+        IEnumerable<Card> GetAllCards();
+        Card? GetCardById(int id);
     }
 }
