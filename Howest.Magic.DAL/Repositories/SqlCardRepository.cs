@@ -5,24 +5,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// Scaffold-DbContext “Server=localhost;Initial Catalog=mtg_v1;Integrated Security=True;Encrypt=False” -Project Howest.MagicCards.DAL Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models
-
 namespace Howest.MagicCards.DAL.Repositories
 {
     public class SqlCardRepository : ICardRepository
     {
         private readonly MtgV1Context _db;
 
-        public SqlCardRepository()
+        public SqlCardRepository(MtgV1Context db)
         {
-            _db = new MtgV1Context();
+            _db = db;
         }
 
-        public IEnumerable<Card> GetAllCards()
+        public IQueryable<Card> GetAllCards()
         {
             IQueryable<Card> allCards = _db.Cards.Take(10).Select(c => c);
 
-            return allCards.ToList();
+            return allCards;
         }
 
         public Card? GetCardById(int id)
