@@ -2,6 +2,8 @@
 using Howest.MagicCards.Shared.DTO;
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper.QueryableExtensions;
+using Howest.MagicCards.WebAPI.Wrappers;
+using Howest.MagicCards.Shared.Filters;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -19,19 +21,40 @@ namespace Howest.MagicCards.WebAPI.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<CardReadDTO>> GetCards()
+        public ActionResult<PagedResponse<IEnumerable<CardReadDTO>>> GetCards([FromQuery] PaginationFilter paginationFilter)
         {
             return (_cardRepo.GetAllCards() is IQueryable<Card> allCards)
-                ? Ok(allCards.ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider).ToList())
-                : NotFound("No cards found");
+                ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
+                        allCards
+                            .Skip((paginationFilter.PageNumber - 1) * paginationFilter.PageSize)
+                            .Take(paginationFilter.PageSize)
+                            .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
+                            .ToList(),
+                        paginationFilter.PageNumber,
+                        paginationFilter.PageSize
+                    )
+                )
+                : NotFound(
+                    new Response<CardReadDTO>
+                    {
+                        Errors = new string[] { "404" },
+                        Message = "No cards found"
+                    }
+                );
         }
 
         [HttpGet("{id:int}")]
-        public ActionResult<CardReadDTO> GetCard(int id)
+        public ActionResult<Response<CardReadDTO>> GetCard(int id)
         {
             return (_cardRepo.GetCardById(id) is Card foundCard)
-                ? Ok(_mapper.Map<CardReadDTO>(foundCard))
-                : NotFound($"No book found with id {id}");
+                ? Ok(new Response<CardReadDTO>(_mapper.Map<CardReadDTO>(foundCard)))
+                : NotFound(
+                    new Response<CardReadDTO>()
+                    {
+                        Errors = new string[] { "404" },
+                        Message = $"No card found with id {id}"
+                    }    
+                );
         }
     }
 }

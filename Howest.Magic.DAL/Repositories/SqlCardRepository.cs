@@ -18,7 +18,7 @@ namespace Howest.MagicCards.DAL.Repositories
 
         public IQueryable<Card> GetAllCards()
         {
-            IQueryable<Card> allCards = _db.Cards.Take(10).Select(c => c);
+            IQueryable<Card> allCards = _db.Cards.Select(c => c);
 
             return allCards;
         }
