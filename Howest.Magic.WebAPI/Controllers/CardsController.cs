@@ -5,6 +5,7 @@ using AutoMapper.QueryableExtensions;
 using Howest.MagicCards.WebAPI.Wrappers;
 using Howest.MagicCards.Shared.Filters;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -25,18 +26,18 @@ namespace Howest.MagicCards.WebAPI.Controllers
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
         [ProducesResponseType(typeof(string), 404)]
         [ProducesResponseType(typeof(string), 500)]
-        public ActionResult<PagedResponse<IEnumerable<CardReadDTO>>> GetCards([FromQuery] CardFilter filter)
+        public async Task<ActionResult<PagedResponse<IEnumerable<CardReadDTO>>>> GetCards([FromQuery] CardFilter filter)
         {
             try
             {
-                return (_cardRepo.GetAllCards() is IQueryable<Card> allCards)
+                return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
                     ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
-                            allCards
+                            await allCards
                                 .Where(c => string.IsNullOrEmpty(filter.Name) || c.Name.Contains(filter.Name))
                                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                                 .Take(filter.PageSize)
                                 .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
-                                .ToList(),
+                                .ToListAsync(),
                             filter.PageNumber,
                             filter.PageSize
                         )
@@ -66,11 +67,11 @@ namespace Howest.MagicCards.WebAPI.Controllers
 
         [HttpGet("{id:int}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-        public ActionResult<Response<CardReadDTO>> GetCard(int id)
+        public async Task<ActionResult<Response<CardReadDTO>>> GetCard(int id)
         {
             try
             {
-                return (_cardRepo.GetCardById(id) is Card foundCard)
+                return (await _cardRepo.GetCardById(id) is Card foundCard)
                     ? Ok(new Response<CardReadDTO>(_mapper.Map<CardReadDTO>(foundCard)))
                     : NotFound(
                         new Response<CardReadDTO>()

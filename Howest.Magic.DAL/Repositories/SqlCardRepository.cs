@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,16 +17,16 @@ namespace Howest.MagicCards.DAL.Repositories
             _db = db;
         }
 
-        public IQueryable<Card> GetAllCards()
+        public async Task<IQueryable<Card>> GetAllCards()
         {
             IQueryable<Card> allCards = _db.Cards.Select(c => c);
 
-            return allCards;
+            return await Task.FromResult(allCards);
         }
 
-        public Card? GetCardById(int id)
+        public async Task<Card?> GetCardById(int id)
         {
-            Card? singleCard = _db.Cards.SingleOrDefault(c => c.Id == id);
+            Card? singleCard = await _db.Cards.SingleOrDefaultAsync(c => c.Id == id);
 
             return singleCard;
         }
