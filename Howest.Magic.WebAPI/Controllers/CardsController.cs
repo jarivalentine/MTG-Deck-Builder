@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using AutoMapper.QueryableExtensions;
 using Howest.MagicCards.WebAPI.Wrappers;
 using Howest.MagicCards.Shared.Filters;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -21,40 +22,77 @@ namespace Howest.MagicCards.WebAPI.Controllers
         }
 
         [HttpGet]
-        public ActionResult<PagedResponse<IEnumerable<CardReadDTO>>> GetCards([FromQuery] PaginationFilter paginationFilter)
+        [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
+        [ProducesResponseType(typeof(string), 404)]
+        [ProducesResponseType(typeof(string), 500)]
+        public ActionResult<PagedResponse<IEnumerable<CardReadDTO>>> GetCards([FromQuery] CardFilter filter)
         {
-            return (_cardRepo.GetAllCards() is IQueryable<Card> allCards)
-                ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
-                        allCards
-                            .Skip((paginationFilter.PageNumber - 1) * paginationFilter.PageSize)
-                            .Take(paginationFilter.PageSize)
-                            .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
-                            .ToList(),
-                        paginationFilter.PageNumber,
-                        paginationFilter.PageSize
+            try
+            {
+                return (_cardRepo.GetAllCards() is IQueryable<Card> allCards)
+                    ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
+                            allCards
+                                .Where(c => string.IsNullOrEmpty(filter.Name) || c.Name.Contains(filter.Name))
+                                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                                .Take(filter.PageSize)
+                                .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
+                                .ToList(),
+                            filter.PageNumber,
+                            filter.PageSize
+                        )
                     )
-                )
-                : NotFound(
-                    new Response<CardReadDTO>
+                    : NotFound(
+                        new Response<CardReadDTO>
+                        {
+                            Succeeded = false,
+                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
+                            Message = "No cards found"
+                        }
+                    );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response<CardReadDTO>()
                     {
-                        Errors = new string[] { "404" },
-                        Message = "No cards found"
+                        Succeeded = false,
+                        Errors = new string[] { $"Status code: {StatusCodes.Status500InternalServerError}" },
+                        Message = $"({ex.Message}) "
                     }
                 );
+            }
         }
 
         [HttpGet("{id:int}")]
+        [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         public ActionResult<Response<CardReadDTO>> GetCard(int id)
         {
-            return (_cardRepo.GetCardById(id) is Card foundCard)
-                ? Ok(new Response<CardReadDTO>(_mapper.Map<CardReadDTO>(foundCard)))
-                : NotFound(
+            try
+            {
+                return (_cardRepo.GetCardById(id) is Card foundCard)
+                    ? Ok(new Response<CardReadDTO>(_mapper.Map<CardReadDTO>(foundCard)))
+                    : NotFound(
+                        new Response<CardReadDTO>()
+                        {
+                            Succeeded = false,
+                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
+                            Message = $"No card found with id {id}"
+                        }
+                    );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
                     new Response<CardReadDTO>()
                     {
-                        Errors = new string[] { "404" },
-                        Message = $"No card found with id {id}"
-                    }    
+                        Succeeded = false,
+                        Errors = new string[] { $"Status code: {StatusCodes.Status500InternalServerError}" },
+                        Message = $"({ex.Message}) "
+                    }
                 );
+            }
         }
     }
 }
