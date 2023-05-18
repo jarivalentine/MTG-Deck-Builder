@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,12 @@ builder.Services.AddDbContext<MtgV1Context>(
 );
 builder.Services.AddScoped<ICardRepository, SqlCardRepository>();
 builder.Services.AddAutoMapper(new System.Type[] { typeof(Howest.MagicCards.Shared.Mappings.CardsProfile) });
+
+builder.Services.AddApiVersioning(o => {
+    o.ReportApiVersions = true;
+    o.AssumeDefaultVersionWhenUnspecified = true;
+    o.DefaultApiVersion = new ApiVersion(1, 1);
+});
 
 var app = builder.Build();
 

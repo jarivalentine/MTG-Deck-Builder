@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.1")]
+    [ApiVersion("1.5")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class CardsController : ControllerBase
     {
@@ -22,6 +24,7 @@ namespace Howest.MagicCards.WebAPI.Controllers
             _mapper = mapper;
         }
 
+        [MapToApiVersion("1.1")]
         [HttpGet]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
         [ProducesResponseType(typeof(string), 404)]
@@ -65,6 +68,7 @@ namespace Howest.MagicCards.WebAPI.Controllers
             }
         }
 
+        [MapToApiVersion("1.5")]
         [HttpGet("{id:int}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         public async Task<ActionResult<Response<CardReadDTO>>> GetCard(int id)
