@@ -13,7 +13,9 @@ namespace Howest.MagicCards.DAL.Repositories
 
         public async Task<IQueryable<Card>> GetAllCards()
         {
-            IQueryable<Card> allCards = _db.Cards.Select(c => c);
+            IQueryable<Card> allCards = _db.Cards
+                .Include(c => c.Artist)
+                .Select(c => c);
 
             return await Task.FromResult(allCards);
         }
