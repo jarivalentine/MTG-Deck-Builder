@@ -24,7 +24,6 @@ namespace Howest.MagicCards.WebAPI.Controllers
             _mapper = mapper;
         }
 
-        [MapToApiVersion("1.1")]
         [HttpGet]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
         [ProducesResponseType(typeof(string), 404)]
