@@ -10,6 +10,7 @@ namespace Howest.MagicCards.Shared.DTO
         string Name,
         string? ManaCost,
         string? Type,
-        string? Image
+        string? Image,
+        string? Text
     );
 }

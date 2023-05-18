@@ -34,14 +34,13 @@ namespace Howest.MagicCards.WebAPI.Controllers
         {
             try
             {
-                filter.MaxPageSize = int.Parse(config["maxPageSize"]);
+                int maxPageSize = int.Parse(config["maxPageSize"]);
                 Console.WriteLine(filter.PageSize.ToString());
                 Console.WriteLine(filter.MaxPageSize.ToString());
                 return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
                     ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
                             await allCards
-                                .Where(c => string.IsNullOrEmpty(filter.Name) || c.Name.Contains(filter.Name))
-                                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                                .Where(c => c.Name.Contains(filter.Name) && c.Type.Contains(filter.Type) && c.Text.Contains(filter.Text))
                                 .Take(filter.PageSize)
                                 .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
                                 .ToListAsync(),
@@ -87,7 +86,7 @@ namespace Howest.MagicCards.WebAPI.Controllers
                 return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
                     ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
                             await allCards
-                                .Where(c => string.IsNullOrEmpty(filter.Name) || c.Name.Contains(filter.Name))
+                                .Where(c => c.Name.Contains(filter.Name) && c.Type.Contains(filter.Type) && c.Text.Contains(filter.Text))
                                 .Sort(filter.OrderBy ?? string.Empty)
                                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                                 .Take(filter.PageSize)
