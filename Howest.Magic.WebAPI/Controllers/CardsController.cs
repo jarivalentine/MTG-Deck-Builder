@@ -6,6 +6,7 @@ using Howest.MagicCards.WebAPI.Wrappers;
 using Howest.MagicCards.Shared.Filters;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
+using Howest.MagicCards.Shared.Extensions;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -24,14 +25,18 @@ namespace Howest.MagicCards.WebAPI.Controllers
             _mapper = mapper;
         }
 
+        [MapToApiVersion("1.1")]
         [HttpGet]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
         [ProducesResponseType(typeof(string), 404)]
         [ProducesResponseType(typeof(string), 500)]
-        public async Task<ActionResult<PagedResponse<IEnumerable<CardReadDTO>>>> GetCards([FromQuery] CardFilter filter)
+        public async Task<ActionResult<PagedResponse<IEnumerable<CardReadDTO>>>> GetCards([FromQuery] CardFilter filter, [FromServices] IConfiguration config)
         {
             try
             {
+                filter.MaxPageSize = int.Parse(config["maxPageSize"]);
+                Console.WriteLine(filter.PageSize.ToString());
+                Console.WriteLine(filter.MaxPageSize.ToString());
                 return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
                     ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
                             await allCards
@@ -68,8 +73,58 @@ namespace Howest.MagicCards.WebAPI.Controllers
         }
 
         [MapToApiVersion("1.5")]
+        [HttpGet]
+        [ProducesResponseType(typeof(PagedResponse<IEnumerable<CardReadDTO>>), 200)]
+        [ProducesResponseType(typeof(string), 404)]
+        [ProducesResponseType(typeof(string), 500)]
+        public async Task<ActionResult<PagedResponse<IEnumerable<CardReadDTO>>>> GetCards([FromQuery] CardOrderFilter filter, [FromServices] IConfiguration config)
+        {
+            try
+            {
+                filter.MaxPageSize = int.Parse(config["maxPageSize"]);
+                Console.WriteLine(filter.PageSize.ToString());
+                Console.WriteLine(filter.MaxPageSize.ToString());
+                return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
+                    ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
+                            await allCards
+                                .Where(c => string.IsNullOrEmpty(filter.Name) || c.Name.Contains(filter.Name))
+                                .Sort(filter.OrderBy ?? string.Empty)
+                                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                                .Take(filter.PageSize)
+                                .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
+                                .ToListAsync(),
+                            filter.PageNumber,
+                            filter.PageSize
+                        )
+                    )
+                    : NotFound(
+                        new Response<CardReadDTO>
+                        {
+                            Succeeded = false,
+                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
+                            Message = "No cards found"
+                        }
+                    );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response<CardReadDTO>()
+                    {
+                        Succeeded = false,
+                        Errors = new string[] { $"Status code: {StatusCodes.Status500InternalServerError}" },
+                        Message = $"({ex.Message}) "
+                    }
+                );
+            }
+        }
+
+        [MapToApiVersion("1.5")]
         [HttpGet("{id:int}")]
-        [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
+        [ProducesResponseType(typeof(Response<CardReadDTO>), 200)]
+        [ProducesResponseType(typeof(string), 404)]
+        [ProducesResponseType(typeof(string), 500)]
         public async Task<ActionResult<Response<CardReadDTO>>> GetCard(int id)
         {
             try
