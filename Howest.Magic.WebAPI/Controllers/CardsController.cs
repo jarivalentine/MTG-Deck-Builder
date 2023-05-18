@@ -7,6 +7,7 @@ using Howest.MagicCards.Shared.Filters;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Howest.MagicCards.Shared.Extensions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Howest.MagicCards.WebAPI.Controllers
 {
@@ -18,11 +19,13 @@ namespace Howest.MagicCards.WebAPI.Controllers
     {
         private readonly ICardRepository _cardRepo;
         private readonly IMapper _mapper;
+        private readonly IMemoryCache _cache;
 
-        public CardsController(ICardRepository cardRepo, IMapper mapper)
+        public CardsController(ICardRepository cardRepo, IMapper mapper, IMemoryCache memoryCache)
         {
             _cardRepo = cardRepo;
             _mapper = mapper;
+            _cache = memoryCache;
         }
 
         [MapToApiVersion("1.1")]
@@ -128,16 +131,19 @@ namespace Howest.MagicCards.WebAPI.Controllers
         {
             try
             {
-                return (await _cardRepo.GetCardById(id) is Card foundCard)
-                    ? Ok(new Response<CardReadDTO>(_mapper.Map<CardReadDTO>(foundCard)))
-                    : NotFound(
-                        new Response<CardReadDTO>()
-                        {
-                            Succeeded = false,
-                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
-                            Message = $"No card found with id {id}"
-                        }
-                    );
+                if (!_cache.TryGetValue(id, out CardReadDTO cachedResult))
+                {
+                    cachedResult = _mapper.Map<CardReadDTO>(await _cardRepo.GetCardById(id));
+
+                    MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+                    };
+
+                    _cache.Set(id, cachedResult, cacheOptions);
+                }
+
+                return Ok(new Response<CardReadDTO>(cachedResult));
             }
             catch (Exception ex)
             {
