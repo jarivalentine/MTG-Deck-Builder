@@ -1,11 +1,12 @@
-﻿using GraphQL.Types;
+﻿using GraphQL;
+using GraphQL.Types;
 using Howest.MagicCards.DAL.Models;
 using Howest.MagicCards.DAL.Repositories;
 using Howest.MagicCards.Shared.DTO;
 
 namespace Howest.MagicCards.GraphQL.GraphQLTypes;
 
-public class CardType : ObjectGraphType<CardReadDTO>
+public class CardType : ObjectGraphType<Card>
 {
     public CardType()
     {
