@@ -2,12 +2,9 @@
 
 public class PaginationFilter
 {
-    const int _maxPageSize = 15;
-
-    private int _pageSize = _maxPageSize;
+    private int _maxPageSize = 150;
+    private int _pageSize = 10;
     private int _pageNumber = 1;
-
-    public int MaxPageSize { get; set; } = _maxPageSize;
 
     public int PageNumber
     {
@@ -17,7 +14,7 @@ public class PaginationFilter
 
     public int PageSize
     {
-        get { return _pageSize > MaxPageSize ? MaxPageSize : _pageSize; }
-        set { _pageSize = (value > MaxPageSize || value < 1) ? MaxPageSize : value; }
+        get { return _pageSize > _maxPageSize ? _maxPageSize : _pageSize; }
+        set { _pageSize = (value > _maxPageSize || value < 1) ? _maxPageSize : value; }
     }
 }

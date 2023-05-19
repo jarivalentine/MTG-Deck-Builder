@@ -15,6 +15,8 @@ namespace Howest.MagicCards.DAL.Repositories
         {
             IQueryable<Card> allCards = _db.Cards
                 .Include(c => c.Artist)
+                .Include(c => c.RarityCodeNavigation)
+                .Include(c => c.SetCodeNavigation)
                 .Select(c => c);
 
             return await Task.FromResult(allCards);
@@ -25,6 +27,20 @@ namespace Howest.MagicCards.DAL.Repositories
             Card? singleCard = await _db.Cards.SingleOrDefaultAsync(c => c.Id == id);
 
             return singleCard;
+        }
+
+        public async Task<IQueryable<Rarity>> GetAllRarities()
+        {
+            IQueryable<Rarity> allRarities = _db.Rarities.Select(r => r);
+
+            return await Task.FromResult(allRarities);
+        }
+
+        public async Task<IQueryable<Set>> GetAllSets()
+        {
+            IQueryable<Set> allSets = _db.Sets.Select(s => s);
+
+            return await Task.FromResult(allSets);
         }
     }
 }

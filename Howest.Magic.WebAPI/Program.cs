@@ -1,3 +1,4 @@
+using Howest.MagicCards.Shared.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -17,6 +18,8 @@ builder.Services.AddDbContext<MtgV1Context>(
 );
 builder.Services.AddScoped<ICardRepository, SqlCardRepository>();
 builder.Services.AddAutoMapper(new System.Type[] { typeof(Howest.MagicCards.Shared.Mappings.CardsProfile) });
+
+builder.Services.Configure<PaginationFilter>(config.GetSection("Paging"));
 
 builder.Services.AddApiVersioning(o => {
     o.ReportApiVersions = true;
