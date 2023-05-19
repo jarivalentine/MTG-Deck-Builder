@@ -125,9 +125,9 @@ namespace Howest.MagicCards.WebAPI.Controllers
             }
         }
 
-        // get all rarities
         [HttpGet("rarities")]
         [ProducesResponseType(typeof(Response<IEnumerable<string>>), 200)]
+        [ProducesResponseType(typeof(string), 404)]
         [ProducesResponseType(typeof(string), 500)]
         public async Task<ActionResult<Response<IEnumerable<string>>>> GetRarities()
         {
@@ -164,6 +164,7 @@ namespace Howest.MagicCards.WebAPI.Controllers
 
         [HttpGet("sets")]
         [ProducesResponseType(typeof(Response<IEnumerable<string>>), 200)]
+        [ProducesResponseType(typeof(string), 404)]
         [ProducesResponseType(typeof(string), 500)]
         public async Task<ActionResult<Response<IEnumerable<string>>>> GetSets()
         {

@@ -4,7 +4,7 @@ using MongoDB.Driver;
 
 namespace Howest.MagicCards.DAL.Repositories;
 
-public class MongoDBDeckRepository
+public class MongoDBDeckRepository : IDeckRepository
 {
     private readonly IMongoCollection<MongoDBCard> _cardsCollection;
 
@@ -15,14 +15,27 @@ public class MongoDBDeckRepository
         _cardsCollection = database.GetCollection<MongoDBCard>(mongoDBSettings.Value.CollectionName);
     }
 
-    public async Task<List<MongoDBCard>> GetAsync()
+    public async Task<List<MongoDBCard>> GetAllCards()
     {
         return await _cardsCollection.Find(new BsonDocument()).ToListAsync();
     }
-    public async Task CreateAsync(MongoDBCard card) 
+    public async Task CreateCard(MongoDBCard card) 
     {
         await _cardsCollection.InsertOneAsync(card);
         return;
     }
-    public async Task DeleteAsync(string id) { }
+    public async Task DeleteCard(long id) 
+    {
+        FilterDefinition<MongoDBCard> filter = Builders<MongoDBCard>.Filter.Eq("Id", id);
+        await _cardsCollection.DeleteOneAsync(filter);
+        return;
+    }
+
+    public async Task PutCardAmount(long id, int amount) 
+    {
+        FilterDefinition<MongoDBCard> filter = Builders<MongoDBCard>.Filter.Eq("Id", id);
+        UpdateDefinition<MongoDBCard> update = Builders<MongoDBCard>.Update.Set<int>("amount", amount);
+        await _cardsCollection.UpdateOneAsync(filter, update);
+        return;
+    }
 }

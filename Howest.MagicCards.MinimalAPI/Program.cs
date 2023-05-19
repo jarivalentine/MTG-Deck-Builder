@@ -8,6 +8,7 @@ var (builder, services, config) = WebApplication.CreateBuilder(args);
 const string commonPrefix = "/api";
 
 // Add services to the container.
+builder.Services.AddDeckServices();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

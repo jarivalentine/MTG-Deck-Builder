@@ -8,9 +8,9 @@ namespace Howest.MagicCards.DAL.Repositories
 {
     internal interface IDeckRepository
     {
-        Task<IQueryable<Card>> GetAllCards();
-        void AddCard(Card card);
-        void RemoveCard(Card card);
-
+        Task<List<MongoDBCard>> GetAllCards();
+        Task CreateCard(MongoDBCard card);
+        Task DeleteCard(long id);
+        Task PutCardAmount(long id, int amount);
     }
 }
