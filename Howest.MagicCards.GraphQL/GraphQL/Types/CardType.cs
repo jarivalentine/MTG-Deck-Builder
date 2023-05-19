@@ -13,6 +13,7 @@ public class CardType : ObjectGraphType<Card>
     {
         Name = "Card";
 
+        Field(c => c.Id, type: typeof(LongGraphType));
         Field(c => c.Name, type: typeof(StringGraphType));
         Field(c => c.Type, type: typeof(StringGraphType));
         Field(c => c.Text, type: typeof(StringGraphType));

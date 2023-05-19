@@ -20,7 +20,7 @@ namespace Howest.MagicCards.DAL.Repositories
             return await Task.FromResult(allCards);
         }
 
-        public async Task<Card?> GetCardById(int id)
+        public async Task<Card?> GetCardById(long id)
         {
             Card? singleCard = await _db.Cards.SingleOrDefaultAsync(c => c.Id == id);
 

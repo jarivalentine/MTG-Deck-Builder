@@ -12,6 +12,7 @@ builder.Services.AddDbContext<MtgV1Context>(
     options => options.UseSqlServer(config.GetConnectionString("CardsDB"))
 );
 builder.Services.AddScoped<ICardRepository, SqlCardRepository>();
+builder.Services.AddScoped<IArtistRepository, SqlArtistRepository>();
 
 builder.Services.AddScoped<RootSchema>();
 builder.Services.AddGraphQL()
