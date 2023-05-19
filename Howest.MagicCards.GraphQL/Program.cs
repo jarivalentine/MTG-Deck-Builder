@@ -13,6 +13,15 @@ builder.Services.AddDbContext<MtgV1Context>(
 );
 builder.Services.AddScoped<ICardRepository, SqlCardRepository>();
 
+builder.Services.AddScoped<RootSchema>();
+builder.Services.AddGraphQL()
+                .AddGraphTypes(typeof(RootSchema), ServiceLifetime.Scoped)
+                .AddDataLoader()
+                .AddSystemTextJson();
+
 var app = builder.Build();
+
+app.UseGraphQL<RootSchema>();
+app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions());
 
 app.Run();
