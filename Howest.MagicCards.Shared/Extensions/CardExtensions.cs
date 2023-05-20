@@ -10,7 +10,7 @@ public static class CardExtensions
     {
         if (string.IsNullOrEmpty(orderByQueryString))
         {
-            return cards.OrderBy(c => c.Name);
+            return cards;
         }
 
         string[] orderParameters = orderByQueryString.Trim().Split(',');

@@ -1,8 +1,15 @@
+using Howest.MagicCards.Shared.Mappings;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+
+builder.Services.AddHttpClient("CardsAPI", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7103/api/v1.5/");
+});
 
 var app = builder.Build();
 

@@ -25,12 +25,11 @@ public class RootQuery : ObjectGraphType
             {
                 string power = context.GetArgument<string>("power");
                 string toughness = context.GetArgument<string>("toughness");
-                Console.WriteLine($"power: {power}, toughness: {toughness}");
                 IQueryable<Card> cards = await cardRepository.GetAllCards();
                 return cards
                     .Where(c => 
-                        string.IsNullOrEmpty(power) || c.Power == power 
-                        && string.IsNullOrEmpty(toughness) || c.Toughness == toughness
+                        (string.IsNullOrEmpty(power) || c.Power == power )
+                        && (string.IsNullOrEmpty(toughness) || c.Toughness == toughness)
                     ).ToList();
             }
         );

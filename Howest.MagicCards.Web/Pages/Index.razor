@@ -1,9 +1,58 @@
 ﻿@page "/"
+@using Howest.MagicCards.Shared.DTO;
+@using System.Text.Json;
+@using Howest.MagicCards.Shared.Wrappers;
+
+@inject IHttpClientFactory httpClientFactory
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Deckbuilder</h1>
 
-Welcome to your new app.
+@if (cards == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h2>@message</h2>
+    @foreach (CardReadDTO card in cards)
+    {
+        <img src="@card.OriginalImageUrl" />
+    }
+}
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private IEnumerable<CardReadDTO>? cards = null;
+    private string message = string.Empty;
+    private readonly JsonSerializerOptions jsonOptions;
+
+    public Index()
+    {
+        jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        HttpClient httpClient = httpClientFactory.CreateClient("CardsAPI");
+
+        HttpResponseMessage response = await httpClient.GetAsync("cards");
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode)
+        {
+            PagedResponse<IEnumerable<CardReadDTO>>? result =
+                    JsonSerializer.Deserialize<PagedResponse<IEnumerable<CardReadDTO>>>(apiResponse, jsonOptions);
+            cards = result?.Data;
+        }
+        else
+        {
+            cards = new List<CardReadDTO>();
+            message = $"Error: {response.ReasonPhrase}";
+        }
+    }
+}
