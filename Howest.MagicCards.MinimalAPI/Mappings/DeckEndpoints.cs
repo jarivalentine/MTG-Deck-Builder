@@ -18,19 +18,19 @@ public static class DeckEndpoints
         {
             await deckRepo.CreateCard(newCard);
             return Results.Created($"{urlPrefix}/deck/{newCard.Id}", newCard);
-        }).Accepts<MongoDBCard>("application/json").WithTags("Deck"); ;
+        }).Accepts<MongoDBCard>("application/json").WithTags("Deck");
 
         app.MapDelete($"{urlPrefix}/deck/{{id}}", async (MongoDBDeckRepository deckRepo, long id) =>
         {
             await deckRepo.DeleteCard(id);
             return Results.Ok($"Card with id {id} is deleted!");
-        }).WithTags("Deck"); ;
+        }).WithTags("Deck");
 
         app.MapPut($"{urlPrefix}/students/{{id}}/{{amount}}", async (MongoDBDeckRepository deckRepo, long id, int amount) =>
         {
             await deckRepo.PutCardAmount(id, amount);
             return Results.Ok($"Card with id {id} updated to amount {amount}");
-        }).WithTags("Deck"); ;
+        }).WithTags("Deck");
     }
 
     public static void AddDeckServices(this IServiceCollection services)

@@ -1,7 +1,10 @@
 ﻿@page "/"
+@using Howest.MagicCards.DAL.Models;
 @using Howest.MagicCards.Shared.DTO;
 @using System.Text.Json;
+@using Howest.MagicCards.Shared.ViewModels;
 @using Howest.MagicCards.Shared.Wrappers;
+@using System.Text;
 
 @inject IHttpClientFactory httpClientFactory
 
@@ -9,23 +12,67 @@
 
 <h1>Deckbuilder</h1>
 
-@if (cards == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <h2>@message</h2>
-    @foreach (CardReadDTO card in cards)
-    {
-        <img src="@card.OriginalImageUrl" />
-    }
-}
+<div class="row">
+    <div class="col-9">
+        <EditForm Model="@_filter" OnValidSubmit="@FilterCards">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <InputText placeholder="name" id="Name" class="form-control" @bind-Value="@_filter.Name" />
+            </div>
+            <button type="submit" class="btn btn-info">Filter</button>
+        </EditForm>
+        <div>
+            @if (cards == null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                <h2>@message</h2>
+                @foreach (CardReadDTO card in cards)
+                {
+                    if (card.OriginalImageUrl != null)
+					{
+                        <img @onclick="@(() => AddToDeck(@card.Id))" width="200" src="@card.OriginalImageUrl" alt="@card.Name" />
+                    }
+                    else
+                    {
+                        <img height="278" width="200" alt="No img found fallback" src="https://i.imgur.com/PtOJpqm.jpg" />
+                    }
+                }
+            }
+        </div>
+    </div>
+    <div class="col-3">
+        <h2>Deck</h2>
+        @if (deck == null)
+        {
+            <p>No cards in deck</p>
+        }
+        else
+        {
+            <h2>@message</h2>
+            <ul>
+                @foreach (MongoDBCard card in deck)
+				{
+					<li>@card.Name</li>
+				}
+            </ul>
+        }
+    </div>
+</div>
 
 @code {
-    private IEnumerable<CardReadDTO>? cards = null;
     private string message = string.Empty;
+    private bool _formActive;
+    private FilterViewModel _filter;
+
+    private IEnumerable<CardReadDTO>? cards = null;
+    private IEnumerable<MongoDBCard>? deck = null;
     private readonly JsonSerializerOptions jsonOptions;
+    private HttpClient _cardsApi;
+    private HttpClient _deckApi;
 
     public Index()
     {
@@ -37,9 +84,29 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        HttpClient httpClient = httpClientFactory.CreateClient("CardsAPI");
+        _formActive = false;
+        _filter = new FilterViewModel();
+        _cardsApi = httpClientFactory.CreateClient("CardsAPI");
+        _deckApi = httpClientFactory.CreateClient("DeckAPI");
+        await GetCards();
+    }
 
-        HttpResponseMessage response = await httpClient.GetAsync("cards");
+    private async Task FilterCards()
+    {
+        cards = null;
+        await ReloadDeck();
+        await GetCards();
+    }
+
+    private async Task GetCards()
+    {
+        string url = "cards";
+        if (_filter.Name != null)
+        {
+            url += $"?name={_filter.Name}";
+        }
+
+        HttpResponseMessage response = await _cardsApi.GetAsync(url);
 
         string apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -54,5 +121,46 @@ else
             cards = new List<CardReadDTO>();
             message = $"Error: {response.ReasonPhrase}";
         }
+    }
+
+    private async void AddToDeck(long id)
+    {
+        CardReadDTO? card = null;
+
+        HttpResponseMessage response = await _cardsApi.GetAsync($"cards/{id}");
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode)
+        {
+            Response<CardReadDTO>? result =
+                    JsonSerializer.Deserialize<Response<CardReadDTO>>(apiResponse, jsonOptions);
+            card = result?.Data;
+        }
+        else
+        {
+            message = $"Error: {response.ReasonPhrase}";
+        }
+
+        await _deckApi.PostAsync("deck", new StringContent(JsonSerializer.Serialize(card, jsonOptions), Encoding.UTF8, "application/json"));
+        await ReloadDeck();
+    }
+
+    private async Task ReloadDeck()
+    {
+        HttpResponseMessage response = await _deckApi.GetAsync("deck");
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode)
+        {
+            IEnumerable<MongoDBCard> result =
+                    JsonSerializer.Deserialize<IEnumerable<MongoDBCard>>(apiResponse, jsonOptions);
+            deck = result;
+        }
+		else
+		{
+			message = $"Error: {response.ReasonPhrase}";
+		}
     }
 }
