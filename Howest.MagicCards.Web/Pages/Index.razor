@@ -18,7 +18,20 @@
             <DataAnnotationsValidator />
             <ValidationSummary />
             <div class="form-group">
-                <InputText placeholder="name" id="Name" class="form-control" @bind-Value="@_filter.Name" />
+                <div class="row">
+                    <div class="col">
+                        <InputText placeholder="name" id="Name" class="form-control" @bind-Value="@_filter.Name" />
+                        <InputText placeholder="text" id="Text" class="form-control" @bind-Value="@_filter.Text" />
+                    </div>
+                    <div class="col">
+                        <InputText placeholder="artist" id="Artist" class="form-control" @bind-Value="@_filter.Artist" />
+                        <InputText placeholder="type" id="Type" class="form-control" @bind-Value="@_filter.Type" />
+                    </div>
+                    <div class="col">
+                        <InputText placeholder="set" id="Set" class="form-control" @bind-Value="@_filter.Set" />
+
+                    </div>
+                </div>
             </div>
             <button type="submit" class="btn btn-info">Filter</button>
         </EditForm>
@@ -38,7 +51,7 @@
                     }
                     else
                     {
-                        <img height="278" width="200" alt="No img found fallback" src="https://i.imgur.com/PtOJpqm.jpg" />
+                        <img @onclick="@(() => AddToDeck(@card.Id))" height="278" width="200" alt="No img found fallback" src="https://i.imgur.com/PtOJpqm.jpg" />
                     }
                 }
             }
@@ -52,7 +65,6 @@
         }
         else
         {
-            <h2>@message</h2>
             <ul>
                 @foreach (MongoDBCard card in deck)
 				{
@@ -88,23 +100,25 @@
         _filter = new FilterViewModel();
         _cardsApi = httpClientFactory.CreateClient("CardsAPI");
         _deckApi = httpClientFactory.CreateClient("DeckAPI");
+        await ReloadDeck();
         await GetCards();
     }
 
     private async Task FilterCards()
     {
         cards = null;
-        await ReloadDeck();
         await GetCards();
     }
 
     private async Task GetCards()
     {
+        message = null;
         string url = "cards";
-        if (_filter.Name != null)
-        {
-            url += $"?name={_filter.Name}";
-        }
+        if (_filter.Name != null) url += $"?name={_filter.Name}";
+        if (_filter.Text != null) url += $"&text={_filter.Text}";
+        if (_filter.Artist != null) url += $"&artist={_filter.Artist}";
+        if (_filter.Type != null) url += $"&type={_filter.Type}";
+        if (_filter.Set != null) url += $"&set={_filter.Set}";
 
         HttpResponseMessage response = await _cardsApi.GetAsync(url);
 
@@ -125,6 +139,7 @@
 
     private async void AddToDeck(long id)
     {
+        message = null;
         CardReadDTO? card = null;
 
         HttpResponseMessage response = await _cardsApi.GetAsync($"cards/{id}");

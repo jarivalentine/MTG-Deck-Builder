@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Type = Howest.MagicCards.DAL.Models.Type;
 
 namespace Howest.MagicCards.DAL.Repositories
 {
@@ -34,13 +35,6 @@ namespace Howest.MagicCards.DAL.Repositories
             IQueryable<Rarity> allRarities = _db.Rarities.Select(r => r);
 
             return await Task.FromResult(allRarities);
-        }
-
-        public async Task<IQueryable<Set>> GetAllSets()
-        {
-            IQueryable<Set> allSets = _db.Sets.Select(s => s);
-
-            return await Task.FromResult(allSets);
         }
     }
 }

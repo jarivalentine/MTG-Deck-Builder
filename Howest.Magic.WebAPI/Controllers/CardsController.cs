@@ -42,13 +42,13 @@ namespace Howest.MagicCards.WebAPI.Controllers
                             await allCards
                                 .Where(c => 
                                     c.Name.Contains(filter.Name) 
-                                    && c.Type.Contains(filter.Type) 
+                                    && c.SetCodeNavigation.Name.Contains(filter.Set)
                                     && c.Text.Contains(filter.Text)
                                     && c.Artist.FullName.Contains(filter.Artist)
                                 )
                                 .Where(c =>
                                     filter.Rarity.IsNullOrEmpty() || c.RarityCodeNavigation.Name == filter.Rarity
-                                    && filter.Set.IsNullOrEmpty() || c.SetCodeNavigation.Name == filter.Set)
+                                    && filter.Type.IsNullOrEmpty() || c.Type == filter.Type)
                                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                                 .Take(filter.PageSize)
                                 .ProjectTo<CardReadDTO>(_mapper.ConfigurationProvider)
@@ -92,7 +92,15 @@ namespace Howest.MagicCards.WebAPI.Controllers
                 return (await _cardRepo.GetAllCards() is IQueryable<Card> allCards)
                     ? Ok(new PagedResponse<IEnumerable<CardReadDTO>>(
                             await allCards
-                                .Where(c => c.Name.Contains(filter.Name) && c.Type.Contains(filter.Type) && c.Text.Contains(filter.Text))
+                                .Where(c =>
+                                    c.Name.Contains(filter.Name)
+                                    && c.SetCodeNavigation.Name.Contains(filter.Set)
+                                    && c.Text.Contains(filter.Text)
+                                    && c.Artist.FullName.Contains(filter.Artist)
+                                )
+                                .Where(c =>
+                                    filter.Rarity.IsNullOrEmpty() || c.RarityCodeNavigation.Name == filter.Rarity
+                                    && filter.Type.IsNullOrEmpty() || c.Type == filter.Type)
                                 .Sort(filter.OrderBy ?? string.Empty)
                                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                                 .Take(filter.PageSize)
@@ -133,58 +141,22 @@ namespace Howest.MagicCards.WebAPI.Controllers
         {
             try
             {
-                return (await _cardRepo.GetAllRarities() is IQueryable<Rarity> allRarities)
-                    ? Ok(new Response<IEnumerable<string>>(
-                            await allRarities
-                                .Select(r => r.Name)
-                                .ToListAsync()
-                            )
-                        )
-                    : NotFound(
-                        new Response<IEnumerable<string>>
-                        {
-                            Succeeded = false,
-                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
-                            Message = "No rarities found"
-                        }
-                    );
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response<IEnumerable<string>>()
-                    {
-                        Succeeded = false,
-                        Errors = new string[] { $"Status code: {StatusCodes.Status500InternalServerError}" },
-                        Message = $"({ex.Message}) "
-                    });
-            }
-        }
+                if (!_cache.TryGetValue("rarities", out IEnumerable<string> cachedResult))
+                {
+                    IQueryable<Rarity> rarities = await _cardRepo.GetAllRarities();
+                    cachedResult = await rarities
+                        .Select(r => r.Name)
+                        .ToListAsync();
 
-        [HttpGet("sets")]
-        [ProducesResponseType(typeof(Response<IEnumerable<string>>), 200)]
-        [ProducesResponseType(typeof(string), 404)]
-        [ProducesResponseType(typeof(string), 500)]
-        public async Task<ActionResult<Response<IEnumerable<string>>>> GetSets()
-        {
-            try
-            {
-                return (await _cardRepo.GetAllSets() is IQueryable<Set> allSets)
-                    ? Ok(new Response<IEnumerable<string>>(
-                            await allSets
-                                .Select(s => s.Name)
-                                .ToListAsync()
-                            )
-                        )
-                    : NotFound(
-                        new Response<IEnumerable<string>>
-                        {
-                            Succeeded = false,
-                            Errors = new string[] { $"Status code: {StatusCodes.Status404NotFound}" },
-                            Message = "No sets found"
-                        }
-                    );
+                    MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+                    };
+
+                    _cache.Set("rarities", cachedResult, cacheOptions);
+                }
+
+                return Ok(new Response<IEnumerable<string>>(cachedResult));
             }
             catch (Exception ex)
             {
