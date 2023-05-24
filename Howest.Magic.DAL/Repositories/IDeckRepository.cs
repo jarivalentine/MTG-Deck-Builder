@@ -10,7 +10,7 @@ namespace Howest.MagicCards.DAL.Repositories
     {
         Task<List<MongoDBCard>> GetAllCards();
         Task CreateCard(MongoDBCard card);
-        Task DeleteCard(long id);
+        Task DeleteCards();
         Task PutCardAmount(long id, int amount);
     }
 }

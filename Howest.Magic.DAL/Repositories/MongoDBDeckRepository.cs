@@ -24,16 +24,21 @@ public class MongoDBDeckRepository : IDeckRepository
         await _cardsCollection.InsertOneAsync(card);
         return;
     }
-    public async Task DeleteCard(long id) 
+    public async Task DeleteCards() 
     {
-        FilterDefinition<MongoDBCard> filter = Builders<MongoDBCard>.Filter.Eq("Id", id);
-        await _cardsCollection.DeleteOneAsync(filter);
+        FilterDefinition<MongoDBCard> filter = Builders<MongoDBCard>.Filter.Empty;
+        await _cardsCollection.DeleteManyAsync(filter);
         return;
     }
 
     public async Task PutCardAmount(long id, int amount) 
     {
         FilterDefinition<MongoDBCard> filter = Builders<MongoDBCard>.Filter.Eq("Id", id);
+        if (amount <= 0)
+        {
+            await _cardsCollection.DeleteOneAsync(filter);
+            return;
+        }
         UpdateDefinition<MongoDBCard> update = Builders<MongoDBCard>.Update.Set<int>("amount", amount);
         await _cardsCollection.UpdateOneAsync(filter, update);
         return;

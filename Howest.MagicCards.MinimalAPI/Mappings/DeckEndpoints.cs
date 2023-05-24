@@ -1,5 +1,6 @@
 ﻿using Howest.MagicCards.DAL.Models;
 using Howest.MagicCards.DAL.Repositories;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Howest.MagicCards.MinimalAPI.Mappings;
 
@@ -20,15 +21,15 @@ public static class DeckEndpoints
             return Results.Created($"{urlPrefix}/deck/{newCard.Id}", newCard);
         }).Accepts<MongoDBCard>("application/json").WithTags("Deck");
 
-        app.MapDelete($"{urlPrefix}/deck/{{id}}", async (MongoDBDeckRepository deckRepo, long id) =>
+        app.MapDelete($"{urlPrefix}/deck", async (MongoDBDeckRepository deckRepo) =>
         {
-            await deckRepo.DeleteCard(id);
-            return Results.Ok($"Card with id {id} is deleted!");
+            await deckRepo.DeleteCards();
+            return Results.Ok($"Cards deleted");
         }).WithTags("Deck");
 
-        app.MapPut($"{urlPrefix}/students/{{id}}/{{amount}}", async (MongoDBDeckRepository deckRepo, long id, int amount) =>
+        app.MapPut($"{urlPrefix}/deck/{{id}}", async(MongoDBDeckRepository deckRepo, long id, [FromBody] MongoDBAmount amount) =>
         {
-            await deckRepo.PutCardAmount(id, amount);
+            await deckRepo.PutCardAmount(id, amount.Amount);
             return Results.Ok($"Card with id {id} updated to amount {amount}");
         }).WithTags("Deck");
     }

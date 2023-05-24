@@ -5,6 +5,7 @@
 @using Howest.MagicCards.Shared.ViewModels;
 @using Howest.MagicCards.Shared.Wrappers;
 @using System.Text;
+@using System.Reflection;
 
 @inject IHttpClientFactory httpClientFactory
 
@@ -19,21 +20,31 @@
             <ValidationSummary />
             <div class="form-group">
                 <div class="row">
-                    <div class="col">
-                        <InputText placeholder="name" id="Name" class="form-control" @bind-Value="@_filter.Name" />
-                        <InputText placeholder="text" id="Text" class="form-control" @bind-Value="@_filter.Text" />
+                    <div class="col p-1">
+                        <InputText placeholder="name" id="Name" class="form-control mb-2" @bind-Value="@_filter.Name" />
+                        <InputText placeholder="text" id="Text" class="form-control mb-2" @bind-Value="@_filter.Text" />
                     </div>
-                    <div class="col">
-                        <InputText placeholder="artist" id="Artist" class="form-control" @bind-Value="@_filter.Artist" />
-                        <InputText placeholder="type" id="Type" class="form-control" @bind-Value="@_filter.Type" />
+                    <div class="col p-1">
+                        <InputText placeholder="artist" id="Artist" class="form-control mb-2" @bind-Value="@_filter.Artist" />
+                        <InputText placeholder="type" id="Type" class="form-control mb-2" @bind-Value="@_filter.Type" />
                     </div>
-                    <div class="col">
-                        <InputText placeholder="set" id="Set" class="form-control" @bind-Value="@_filter.Set" />
-
+                    <div class="col p-1">
+                        <InputText placeholder="set" id="Set" class="form-control mb-2" @bind-Value="@_filter.Set" />
+                        <InputSelect id="Rarities" @bind-Value="@_filter.Rarity" class="form-control  mb-2">
+							<option value="">All rarities</option>
+                            @if (rarities != null) {
+                                @foreach (string rarity in rarities)
+                                {
+                                    <option value="@rarity">@rarity</option>
+                                }
+                            }
+                        </InputSelect>
                     </div>
                 </div>
+                <div class="row">
+                    <button type="submit" class="btn btn-info">Filter</button>
+                </div>
             </div>
-            <button type="submit" class="btn btn-info">Filter</button>
         </EditForm>
         <div>
             @if (cards == null)
@@ -58,19 +69,29 @@
         </div>
     </div>
     <div class="col-3">
-        <h2>Deck</h2>
+        <div class="row">
+            <h2 class="col">Deck</h2>
+            @if (@deck != null)
+            {
+                <h3 class="col">@deck.Count() / 60</h3>
+            }
+            <button @onclick="(() => ResetDeck())" class="btn btn-info">Reset</button>
+        </div>
         @if (deck == null)
         {
             <p>No cards in deck</p>
         }
         else
         {
-            <ul>
+            <div>
                 @foreach (MongoDBCard card in deck)
 				{
-					<li>@card.Name</li>
+                    <div class="d-flex m-1" style="user-select: none;">
+                        <div class="p-2 bg-info rounded-circle" onmouseover="this.style.cursor='pointer'" @onclick="@(() => UpdateInDeck(@card.Id, @card.Amount + 1))">@card.Amount</div>
+                        <div class="p-2" onmouseover="this.style.cursor='pointer'" @onclick="@(() => RemoveFromDeck(@card.Id))">@card.Name</div>
+                    </div>
 				}
-            </ul>
+            </div>
         }
     </div>
 </div>
@@ -82,6 +103,8 @@
 
     private IEnumerable<CardReadDTO>? cards = null;
     private IEnumerable<MongoDBCard>? deck = null;
+    private IEnumerable<string>? rarities = null;
+
     private readonly JsonSerializerOptions jsonOptions;
     private HttpClient _cardsApi;
     private HttpClient _deckApi;
@@ -100,6 +123,7 @@
         _filter = new FilterViewModel();
         _cardsApi = httpClientFactory.CreateClient("CardsAPI");
         _deckApi = httpClientFactory.CreateClient("DeckAPI");
+        await loadRarities();
         await ReloadDeck();
         await GetCards();
     }
@@ -110,15 +134,43 @@
         await GetCards();
     }
 
+    private async Task loadRarities()
+    {
+        HttpResponseMessage response = await _cardsApi.GetAsync("cards/rarities");
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+
+        if (response.IsSuccessStatusCode)
+        {
+            Response<IEnumerable<string>> result =
+                    JsonSerializer.Deserialize<Response<IEnumerable<string>>>(apiResponse, jsonOptions);
+            rarities = result?.Data;
+        }
+        else
+        {
+            message = $"Error: {response.ReasonPhrase}";
+        }
+    }
+
     private async Task GetCards()
     {
         message = null;
         string url = "cards";
-        if (_filter.Name != null) url += $"?name={_filter.Name}";
-        if (_filter.Text != null) url += $"&text={_filter.Text}";
-        if (_filter.Artist != null) url += $"&artist={_filter.Artist}";
-        if (_filter.Type != null) url += $"&type={_filter.Type}";
-        if (_filter.Set != null) url += $"&set={_filter.Set}";
+
+        bool flag = false;
+        foreach (PropertyInfo prop in _filter.GetType().GetProperties())
+        {
+            string value = prop.GetValue(_filter, null)?.ToString();
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                if (!flag) url += $"?{prop.Name}={value}";
+                else url += $"&{prop.Name}={value}";
+                flag = true;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(_filter.Rarity)) url += $"&rarity={_filter.Rarity}";
 
         HttpResponseMessage response = await _cardsApi.GetAsync(url);
 
@@ -137,7 +189,7 @@
         }
     }
 
-    private async void AddToDeck(long id)
+    private async Task AddToDeck(long id)
     {
         message = null;
         CardReadDTO? card = null;
@@ -157,8 +209,60 @@
             message = $"Error: {response.ReasonPhrase}";
         }
 
-        await _deckApi.PostAsync("deck", new StringContent(JsonSerializer.Serialize(card, jsonOptions), Encoding.UTF8, "application/json"));
-        await ReloadDeck();
+        bool isCardInDeck = deck?.Any(c => c.Id == card.Id) ?? false;
+        if (isCardInDeck)
+        {
+            int currentAmount = deck.FirstOrDefault(c => c.Id == card.Id)?.Amount ?? 0;
+            await UpdateInDeck(card.Id, currentAmount + 1);
+            return;
+        }
+
+        response = await _deckApi.PostAsync("deck", new StringContent(JsonSerializer.Serialize(card, jsonOptions), Encoding.UTF8, "application/json"));
+
+        if (response.IsSuccessStatusCode)
+        {
+            await ReloadDeck();
+        }
+        else
+        {
+            message = $"Error: {response.ReasonPhrase}";
+        }
+    }
+
+    private async Task RemoveFromDeck(long id)
+    {
+        int currentAmount = deck.FirstOrDefault(c => c.Id == id)?.Amount ?? 0;
+        await UpdateInDeck(id, currentAmount - 1);
+    }
+
+    private async Task UpdateInDeck(long id, int amount)
+    {
+        MongoDBAmount newAmount = new MongoDBAmount();
+        newAmount.Amount = amount;
+        HttpResponseMessage response = await _deckApi.PutAsync($"deck/{id}", new StringContent(JsonSerializer.Serialize(newAmount, jsonOptions), Encoding.UTF8, "application/json"));
+
+        if (response.IsSuccessStatusCode)
+        {
+            await ReloadDeck();
+        }
+        else
+        {
+            message = $"Error: {response.ReasonPhrase}";
+        }
+    }
+
+    private async Task ResetDeck()
+    {
+        HttpResponseMessage response = await _deckApi.DeleteAsync($"deck");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await ReloadDeck();
+        }
+        else
+        {
+            message = $"Error: {response.ReasonPhrase}";
+        }
     }
 
     private async Task ReloadDeck()
