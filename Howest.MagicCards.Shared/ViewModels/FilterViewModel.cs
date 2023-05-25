@@ -9,5 +9,6 @@ public class FilterViewModel
 
     public string? Set { get; set; }
     public string? Rarity { get; set; }
+    public string? SortOn { get; set; }
     public string? Sort { get; set; }
 }

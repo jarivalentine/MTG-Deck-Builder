@@ -23,14 +23,25 @@
                     <div class="col p-1">
                         <InputText placeholder="name" id="Name" class="form-control mb-2" @bind-Value="@_filter.Name" />
                         <InputText placeholder="text" id="Text" class="form-control mb-2" @bind-Value="@_filter.Text" />
+                        <InputSelect id="SortOn" @bind-Value="@_filter.SortOn" class="col form-control mb-2">
+                            <option value="">Sort on</option>
+                            <option value="Name">Name</option>
+                            <option value="Power">Power</option>
+                            <option value="Toughness">Toughness</option>
+                            <option value="ConvertedManaCost">Mana Cost</option>
+                        </InputSelect>
                     </div>
                     <div class="col p-1">
                         <InputText placeholder="artist" id="Artist" class="form-control mb-2" @bind-Value="@_filter.Artist" />
                         <InputText placeholder="type" id="Type" class="form-control mb-2" @bind-Value="@_filter.Type" />
+                        <InputSelect id="Sort" @bind-Value="@_filter.Sort" class="col form-control mb-2">
+                            <option value="">Ascending</option>
+                            <option value="desc">Descending</option>
+                        </InputSelect>
                     </div>
                     <div class="col p-1">
                         <InputText placeholder="set" id="Set" class="form-control mb-2" @bind-Value="@_filter.Set" />
-                        <InputSelect id="Rarities" @bind-Value="@_filter.Rarity" class="form-control  mb-2">
+                        <InputSelect id="Rarities" @bind-Value="@_filter.Rarity" class="form-control mb-2">
 							<option value="">All rarities</option>
                             @if (rarities != null) {
                                 @foreach (string rarity in rarities)
@@ -39,10 +50,8 @@
                                 }
                             }
                         </InputSelect>
+                        <button type="submit" class="btn btn-info col mb-2 w-100">Filter</button>
                     </div>
-                </div>
-                <div class="row">
-                    <button type="submit" class="btn btn-info">Filter</button>
                 </div>
             </div>
         </EditForm>
@@ -169,10 +178,17 @@
 
             if (!string.IsNullOrEmpty(value))
             {
+                if (prop.Name == "SortOn" || prop.Name == "Sort") continue;
                 if (!flag) url += $"?{prop.Name}={value}";
                 else url += $"&{prop.Name}={value}";
                 flag = true;
             }
+        }
+
+        if (!string.IsNullOrEmpty(_filter.SortOn))
+        {
+            if (!flag) url += $"?OrderBy={_filter.SortOn} {_filter.Sort}";
+            else url += $"&OrderBy={_filter.SortOn} {_filter.Sort}";
         }
 
         if (!string.IsNullOrEmpty(_filter.Rarity)) url += $"&rarity={_filter.Rarity}";
