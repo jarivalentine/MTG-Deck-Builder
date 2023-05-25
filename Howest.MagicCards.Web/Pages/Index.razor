@@ -73,10 +73,14 @@
             <h2 class="col">Deck</h2>
             @if (@deck != null)
             {
-                <h3 class="col">@deck.Count() / 60</h3>
+                <h3 class="col">@deck.Sum(c => c.Amount) / 60</h3>
             }
-            <button @onclick="(() => ResetDeck())" class="btn btn-info">Reset</button>
+            <button @onclick="(() => ResetDeck())" class="col btn btn-info">Reset</button>
         </div>
+        @if (!string.IsNullOrEmpty(alert))
+        {
+            <div class="alert alert-danger">@alert</div>
+        }
         @if (deck == null)
         {
             <p>No cards in deck</p>
@@ -87,7 +91,7 @@
                 @foreach (MongoDBCard card in deck)
 				{
                     <div class="d-flex m-1" style="user-select: none;">
-                        <div class="p-2 bg-info rounded-circle" onmouseover="this.style.cursor='pointer'" @onclick="@(() => UpdateInDeck(@card.Id, @card.Amount + 1))">@card.Amount</div>
+                        <div class="p-2 bg-info rounded-circle" onmouseover="this.style.cursor='pointer'" @onclick="@(() => IncreaseInDeck(@card.Id))">@card.Amount</div>
                         <div class="p-2" onmouseover="this.style.cursor='pointer'" @onclick="@(() => RemoveFromDeck(@card.Id))">@card.Name</div>
                     </div>
 				}
@@ -98,6 +102,7 @@
 
 @code {
     private string message = string.Empty;
+    private string alert = string.Empty;
     private bool _formActive;
     private FilterViewModel _filter;
 
@@ -192,6 +197,12 @@
     private async Task AddToDeck(long id)
     {
         message = null;
+        if (deck.Sum(c => c.Amount) >= 60)
+        {
+            alert = "Already 60 cards!";
+            return;
+        }
+
         CardReadDTO? card = null;
 
         HttpResponseMessage response = await _cardsApi.GetAsync($"cards/{id}");
@@ -231,8 +242,20 @@
 
     private async Task RemoveFromDeck(long id)
     {
+        alert = null;
         int currentAmount = deck.FirstOrDefault(c => c.Id == id)?.Amount ?? 0;
         await UpdateInDeck(id, currentAmount - 1);
+    }
+
+    private async Task IncreaseInDeck(long id)
+    {
+        if (deck.Sum(c => c.Amount) >= 60)
+        {
+            alert = "Already 60 cards!";
+            return;
+        }
+        int currentAmount = deck.FirstOrDefault(c => c.Id == id)?.Amount ?? 0;
+        await UpdateInDeck(id, currentAmount + 1);
     }
 
     private async Task UpdateInDeck(long id, int amount)
@@ -253,6 +276,7 @@
 
     private async Task ResetDeck()
     {
+        alert = null;
         HttpResponseMessage response = await _deckApi.DeleteAsync($"deck");
 
         if (response.IsSuccessStatusCode)
