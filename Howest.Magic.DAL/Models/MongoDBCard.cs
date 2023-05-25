@@ -24,5 +24,5 @@ public class MongoDBCard
 
     [BsonElement("mana_cost")]
     [JsonPropertyName("mana_cost")]
-    public string? ManaCost { get; set; }
+    public string? ConvertedManaCost { get; set; }
 }

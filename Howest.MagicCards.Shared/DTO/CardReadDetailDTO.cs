@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 namespace Howest.MagicCards.Shared.DTO
 {
-    public record CardReadDTO(
+    public record CardReadDetailDTO(
         long Id,
         string Name,
-        string? OriginalImageUrl
+        string? ConvertedManaCost,
+        string? Type,
+        string? OriginalImageUrl,
+        string? Text
     );
 }

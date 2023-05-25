@@ -99,9 +99,10 @@
             <div>
                 @foreach (MongoDBCard card in deck)
 				{
-                    <div class="d-flex m-1" style="user-select: none;">
+                    <div class="d-flex m-1 w-100 justify-content-between" style="user-select: none;">
                         <div class="p-2 bg-info rounded-circle" onmouseover="this.style.cursor='pointer'" @onclick="@(() => IncreaseInDeck(@card.Id))">@card.Amount</div>
                         <div class="p-2" onmouseover="this.style.cursor='pointer'" @onclick="@(() => RemoveFromDeck(@card.Id))">@card.Name</div>
+                        <div class="p-2">@card.ConvertedManaCost Mana</div>
                     </div>
 				}
             </div>
@@ -219,7 +220,7 @@
             return;
         }
 
-        CardReadDTO? card = null;
+        CardReadDetailDTO? card = null;
 
         HttpResponseMessage response = await _cardsApi.GetAsync($"cards/{id}");
 
@@ -227,8 +228,8 @@
 
         if (response.IsSuccessStatusCode)
         {
-            Response<CardReadDTO>? result =
-                    JsonSerializer.Deserialize<Response<CardReadDTO>>(apiResponse, jsonOptions);
+            Response<CardReadDetailDTO>? result =
+                    JsonSerializer.Deserialize<Response<CardReadDetailDTO>>(apiResponse, jsonOptions);
             card = result?.Data;
         }
         else
@@ -244,7 +245,12 @@
             return;
         }
 
-        response = await _deckApi.PostAsync("deck", new StringContent(JsonSerializer.Serialize(card, jsonOptions), Encoding.UTF8, "application/json"));
+        MongoDBCard newCard = new MongoDBCard();
+        newCard.Id = card.Id;
+        newCard.Name = card.Name;
+        newCard.ConvertedManaCost = card.ConvertedManaCost;
+
+        response = await _deckApi.PostAsync("deck", new StringContent(JsonSerializer.Serialize(newCard, jsonOptions), Encoding.UTF8, "application/json"));
 
         if (response.IsSuccessStatusCode)
         {

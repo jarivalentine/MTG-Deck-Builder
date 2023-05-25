@@ -180,13 +180,13 @@ namespace Howest.MagicCards.WebAPI.Controllers
         [ProducesResponseType(typeof(Response<CardReadDTO>), 200)]
         [ProducesResponseType(typeof(string), 404)]
         [ProducesResponseType(typeof(string), 500)]
-        public async Task<ActionResult<Response<CardReadDTO>>> GetCard(int id)
+        public async Task<ActionResult<Response<CardReadDetailDTO>>> GetCard(int id)
         {
-            try
+            try 
             {
-                if (!_cache.TryGetValue(id, out CardReadDTO cachedResult))
+                if (!_cache.TryGetValue(id, out CardReadDetailDTO cachedResult))
                 {
-                    cachedResult = _mapper.Map<CardReadDTO>(await _cardRepo.GetCardById(id));
+                    cachedResult = _mapper.Map<CardReadDetailDTO>(await _cardRepo.GetCardById(id));
 
                     MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions()
                     {
@@ -196,13 +196,13 @@ namespace Howest.MagicCards.WebAPI.Controllers
                     _cache.Set(id, cachedResult, cacheOptions);
                 }
 
-                return Ok(new Response<CardReadDTO>(cachedResult));
+                return Ok(new Response<CardReadDetailDTO>(cachedResult));
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
-                    new Response<CardReadDTO>()
+                    new Response<CardReadDetailDTO>()
                     {
                         Succeeded = false,
                         Errors = new string[] { $"Status code: {StatusCodes.Status500InternalServerError}" },
